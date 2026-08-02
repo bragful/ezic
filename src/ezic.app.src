@@ -1,10 +1,10 @@
 {application,ezic,
              [{registered,[]},
-              {vsn,"0.2.3"},
+              {vsn,"0.2.4"},
               {description,"A set of Erlang utilities for the Olson timezone database files"},
               {applications,[kernel,stdlib]},
               {env,[{tzdata_dir,"priv/tzdata"}]},
-              {licenses,["Public Domain"]},
+              {licenses,["PDDL-1.0"]},
               {links,[{"Github","https://github.com/altenwald/ezic"}]},
               {exclude_files,["priv"]},
               {include_files,["Makefile"]}]}.

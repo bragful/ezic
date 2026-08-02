@@ -130,6 +130,21 @@ month_to_num("Sep") -> 9;
 month_to_num("Oct") -> 10;
 month_to_num("Nov") -> 11;
 month_to_num("Dec") -> 12;
+
+% because backzone:Isle_of_Man used "March" once instead of "Mar"
+month_to_num("January") -> 1;
+month_to_num("February") -> 2;
+month_to_num("March") -> 3;
+month_to_num("April") -> 4;
+%% Matched above
+%month_to_num("May") -> 5;
+month_to_num("June") -> 6;
+month_to_num("July") -> 7;
+month_to_num("August") -> 8;
+month_to_num("September") -> 9;
+month_to_num("October") -> 10;
+month_to_num("November") -> 11;
+month_to_num("December") -> 12;
 month_to_num(X) -> erlang:error(badMonth, X).
 
 
@@ -145,24 +160,37 @@ day_to_num(X) ->    erlang:error(badday, X).
 
 
 
-add_seconds(Datetime, Seconds) ->
+add_seconds({Date, {H, M, S}} = Datetime, Seconds) ->
+    %% Compute the datetime's gregorian seconds manually instead of relying on
+    %% calendar:datetime_to_gregorian_seconds/1. Recent OTP releases (OTP 28/29)
+    %% made that function reject an hour >= 24 with a function_clause, but IANA
+    %% tz rules routinely express transition times as 24:00 (and occasionally
+    %% 25:00). Computing the seconds directly preserves the pre-OTP-28 behaviour
+    %% of treating 24:00 as 00:00 of the following day.
     try
     calendar:gregorian_seconds_to_datetime(
-      calendar:datetime_to_gregorian_seconds(Datetime) + Seconds
+      calendar:date_to_gregorian_days(Date) * 86400 + H * 3600 + M * 60 + S + Seconds
      )
     catch
 	error:_ -> erlang:error(baddate, Datetime)
     end.
 
 
+%% Lax replacement for calendar:time_to_seconds/1, which since OTP 28 rejects
+%% an hour outside 0..23 with a function_clause. ezic feeds it UTC/DST offsets
+%% (which may be negative, e.g. {-11,0,0}, or >= 24h) and 24:00 wall times, so
+%% compute the seconds directly to preserve the historical behaviour.
+time_to_seconds({H, M, S}) ->
+    H * 3600 + M * 60 + S.
 
 
 add_offset(Datetime, Offset) ->
     add_offset(Datetime, {0,0,0}, Offset).
+
 add_offset(Datetime, FromOffset, ToOffset) ->
-    FromSec= calendar:time_to_seconds(FromOffset),
-    ToSec= calendar:time_to_seconds(ToOffset),
-    add_seconds(Datetime, ToSec -FromSec).
+    FromSec = time_to_seconds(FromOffset),
+    ToSec = time_to_seconds(ToOffset),
+    add_seconds(Datetime, ToSec - FromSec).
 
 
 
@@ -177,26 +205,26 @@ all_times(X,_,_) when is_atom(X) ->
 % universal time given
 all_times({Date, #tztime{time=UTCTime, flag=Flag}}, Offset, DSTOffset)
   when Flag=:=u; Flag=:=g; Flag=:=z ->
-    UTCDatetime= {Date, UTCTime},
+    UTCDatetime = {Date, UTCTime},
 
-    OSec= calendar:time_to_seconds(Offset),
-    DSTSec= calendar:time_to_seconds(DSTOffset),
+    OSec = time_to_seconds(Offset),
+    DSTSec = time_to_seconds(DSTOffset),
 
-    STDTime= add_seconds(UTCDatetime, OSec),
-    WallTime= add_seconds(STDTime, DSTSec),
+    STDTime = add_seconds(UTCDatetime, OSec),
+    WallTime = add_seconds(STDTime, DSTSec),
 
     {WallTime, STDTime, UTCDatetime};
 
 
 % standard time given
 all_times({Date, #tztime{time=STDTime, flag=s}}, Offset, DSTOffset) ->
-    STDDatetime= {Date, STDTime},
+    STDDatetime = {Date, STDTime},
 
-    OSec= calendar:time_to_seconds(Offset),
-    DSTSec= calendar:time_to_seconds(DSTOffset),
+    OSec = time_to_seconds(Offset),
+    DSTSec = time_to_seconds(DSTOffset),
 
-    UTCTime= add_seconds(STDDatetime, -1*OSec),
-    WallTime= add_seconds(STDDatetime, DSTSec),
+    UTCTime = add_seconds(STDDatetime, -OSec),
+    WallTime = add_seconds(STDDatetime, DSTSec),
 
     {WallTime, STDDatetime, UTCTime};
 
@@ -204,13 +232,13 @@ all_times({Date, #tztime{time=STDTime, flag=s}}, Offset, DSTOffset) ->
 % wall time given
 all_times({Date, #tztime{time=WallTime, flag=Flag}}, Offset, DSTOffset)
   when Flag=:=w; Flag=:=undefined ->
-    WallDatetime= {Date, WallTime},
+    WallDatetime = {Date, WallTime},
 
-    OSec= calendar:time_to_seconds(Offset),
-    DSTSec= calendar:time_to_seconds(DSTOffset),
+    OSec = time_to_seconds(Offset),
+    DSTSec = time_to_seconds(DSTOffset),
 
-    STDTime= add_seconds(WallDatetime, -1*DSTSec),
-    UTCTime= add_seconds(STDTime, -1*OSec),
+    STDTime = add_seconds(WallDatetime, -DSTSec),
+    UTCTime = add_seconds(STDTime, -OSec),
 
     {WallDatetime, STDTime, UTCTime}.
 
@@ -348,11 +376,15 @@ add_days_in_month(Days, Date={Y,M,D}) ->
 
 %% subtracts 1 second from a single datetime
 % @todo type checking
-m1s(Date= {{Y,M,D},{HH,MM,SS}})
+m1s({{Y,M,D},{HH,MM,SS}})
   when is_integer(Y), is_integer(M), is_integer(D)
      , is_integer(HH), is_integer(MM), is_integer(SS) ->
 
-    calendar:gregorian_seconds_to_datetime(calendar:datetime_to_gregorian_seconds(Date) - 1);
+    %% Compute the gregorian seconds directly (see add_seconds/2): OTP 28/29
+    %% reject an hour >= 24 in calendar:datetime_to_gregorian_seconds/1, but tz
+    %% rules can carry 24:00 wall times here too.
+    calendar:gregorian_seconds_to_datetime(
+      calendar:date_to_gregorian_days({Y,M,D}) * 86400 + HH * 3600 + MM * 60 + SS - 1);
 
 %% subtracts 1 second from all datetimes
 % @todo type checking
@@ -363,11 +395,3 @@ m1s({WD, SD, UD}) ->
 % @todo type checking
 m1s(W,S,U) when is_tuple(W), is_tuple(S), is_tuple(U) ->
     {m1s(W), m1s(S), m1s(U)}.
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% INTERNAL
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
