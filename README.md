@@ -53,6 +53,21 @@ Example Setup
 
 
 
+Static Analysis (Prisma `.pplt`)
+--------------------------------
+
+Starting with version `0.2.5`, the Hex package ships a pre-built [Prisma](https://prisma.altenwald.com/) Persistent Lookup Table (`ezic_0.2.6.pplt`) covering all 479 modules (`ezic` core modules and generated IANA timezone modules).
+
+When `ezic` is used as a dependency in a project checked with `rebar3 prisma` or `mix prisma`, Prisma automatically loads the shipped `.pplt` file from the package root instead of re-analyzing all 479 BEAM modules from scratch.
+
+To rebuild the `.pplt` file locally after modifying `ezic`:
+
+    rebar3 prisma build
+
+See the [ezic case study & benchmark](https://prisma.altenwald.com/blog/ezic/) for more details.
+
+
+
 License
 -------
 
