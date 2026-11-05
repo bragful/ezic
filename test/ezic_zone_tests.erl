@@ -3,8 +3,10 @@
 -include_lib("eunit/include/eunit.hrl").
 
 split_by_name_test_() ->
-    AZones= [A=#zone{name=a}, #zone{name=a}, #zone{name=a}],
-    BZones= [B=#zone{name=b}, #zone{name=b}, #zone{name=b}],
+    A = #zone{name=a},
+    B = #zone{name=b},
+    AZones= [A, #zone{name=a}, #zone{name=a}],
+    BZones= [B, #zone{name=b}, #zone{name=b}],
     AllZones= lists:merge(AZones, BZones),
 
     [
@@ -42,18 +44,27 @@ project_end_utc_test_() ->
 
 next_datetime_test_() ->
     BZ=#zone{gmtoff={0,0,0}},
+    Z1=BZ#zone{until={{2010,11,15},#tztime{}}},
+    Z2=BZ#zone{until={{2010,11,5},#tztime{}}},
+    Z3=BZ#zone{until={{2010,11,25},#tztime{}}},
+    Zt1=BZ#zone{until={{2010,11,5},#tztime{time={5,0,0}, flag=u}}},
+    Zt2=BZ#zone{until={{2010,11,5},#tztime{time={12,0,0}, flag=u}}},
+    Zt3=BZ#zone{until={{2010,11,5},#tztime{time={17,0,0}, flag=u}}},
+    Zy1=BZ#zone{until={{1978,11,5},#tztime{}}},
+    Zy2=BZ#zone{until={{1979,11,5},#tztime{}}},
+    Zy3=BZ#zone{until={{1980,11,5},#tztime{}}},
     AllZones= [
-	       Z1=BZ#zone{until={{2010,11,15},#tztime{}}}
-	       , Z2=BZ#zone{until={{2010,11,5},#tztime{}}}
-	       , Z3=BZ#zone{until={{2010,11,25},#tztime{}}}
+	       Z1
+	       , Z2
+	       , Z3
 
-	       , Zt1=BZ#zone{until={{2010,11,5},#tztime{time={5,0,0}, flag=u}}}
-	       , Zt2=BZ#zone{until={{2010,11,5},#tztime{time={12,0,0}, flag=u}}}
-	       , Zt3=BZ#zone{until={{2010,11,5},#tztime{time={17,0,0}, flag=u}}}
+	       , Zt1
+	       , Zt2
+	       , Zt3
 
-	       , Zy1=BZ#zone{until={{1978,11,5},#tztime{}}}
-	       , Zy2=BZ#zone{until={{1979,11,5},#tztime{}}}
-	       , Zy3=BZ#zone{until={{1980,11,5},#tztime{}}}
+	       , Zy1
+	       , Zy2
+	       , Zy3
 	    ],
     [
      % day limits
@@ -77,10 +88,13 @@ next_datetime_test_() ->
 %% ending in standard, wall, and universal time, the following tests
 %% show the choice of "next soonest" as deterministic.
 next_relative_time_test_() ->
+    ZW=#zone{until={{2010,11,7},#tztime{time={2,0,0}, flag=w}}, gmtoff={-7,0,0}},
+    ZS=#zone{until={{2010,11,7},#tztime{time={2,0,0}, flag=s}}, gmtoff={-7,0,0}},
+    ZU=#zone{until={{2010,11,7},#tztime{time={2,0,0}, flag=u}}, gmtoff={-7,0,0}},
     Zones= [
-	    ZW=#zone{until={{2010,11,7},#tztime{time={2,0,0}, flag=w}}, gmtoff={-7,0,0}}
-	    , ZS=#zone{until={{2010,11,7},#tztime{time={2,0,0}, flag=s}}, gmtoff={-7,0,0}}
-	    , ZU=#zone{until={{2010,11,7},#tztime{time={2,0,0}, flag=u}}, gmtoff={-7,0,0}}
+	    ZW
+	    , ZS
+	    , ZU
 	   ],
     [
      %% same dst, different from

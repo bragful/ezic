@@ -58,7 +58,7 @@ parse_lines(eof, _, Records) ->
 parse_lines({ok, Line}, File, Records) ->
     StrLine= clean_line(Line),
     NewRecords= case length(StrLine) > 0 of
-	true -> [parse_to_record(StrLine, File, Records) | Records];
+	true -> [parse_to_record(StrLine, Records) | Records];
 	false -> Records
     end,
     parse_lines(file:read_line(File), File, NewRecords).
@@ -66,7 +66,7 @@ parse_lines({ok, Line}, File, Records) ->
 
 
 % the Line has data, so we parse it, build a record, and return it
-parse_to_record(Line, _, Records) ->
+parse_to_record(Line, Records) ->
     %% error_logger:info_msg("    Parsing Line: ~p~n", [Line]),
     [Type | Data] = string:tokens(Line, " \t"),
     {ok, PrevType, PrevName} = prev_rec_type(Records),

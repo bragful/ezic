@@ -25,21 +25,16 @@ year(X) ->
 
 
 % X=last(Mon,Tue,Wed,...,Sun) -> {last, (Mon,Tue,Web,...,Sun)}
-day_pattern(X=[$l,$a,$s,$t|Day]) ->
-    case ezic_date:day_to_num(Day) > 0 of
-	true -> {last, Day};
-	false -> erlang:error(badday,X)
-    end;
+day_pattern([$l,$a,$s,$t|Day]) ->
+    _ = ezic_date:day_to_num(Day),
+    {last, Day};
 % X=(Mon,Tue,Wed,...,Sun)[<>]=int().
-day_pattern(X=[D,A,Y, Sign,$= | IntS]) ->
+day_pattern([D,A,Y, Sign,$= | IntS]) ->
     Int=list_to_integer(IntS),
     Day=[D,A,Y],
     {ok, FSign}= sign(Sign),
-
-    case ezic_date:day_to_num(Day) > 0 of
-	true -> #tzon{day=Day, filter={FSign, Int}};
-	false -> erlang:error(badday, X)
-    end;
+    _ = ezic_date:day_to_num(Day),
+    #tzon{day=Day, filter={FSign, Int}};
 % X=int()
 day_pattern(X) ->
     list_to_integer(X).

@@ -34,18 +34,8 @@ current(TzName) ->
     current_as_of_utc(erlang:universaltime(), TzName).
 
 current_as_of_utc(UTCDatetime, TzName) ->
-    Zones= ezic_db:zones(TzName),
-    get_zone_utc(UTCDatetime, Zones).
-
-
-
-%% returns the active zone for a given utc time
-%% note: requires that flattening be done
-%% this will likely get reworked significantly
-get_zone_utc(_, []) ->
-    erlang:error(no_current);
-get_zone_utc(_UTCDatetime, _Zones) ->
-    not_done.
+    NormalDatetime = ezic_date:normalize(UTCDatetime, u),
+    ezic_db:flatzone(NormalDatetime, TzName).
 
 
 

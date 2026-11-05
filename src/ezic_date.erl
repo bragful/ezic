@@ -68,11 +68,9 @@ normalize({D={_,_,_},T={HH,_,_}}, Flag)
 normalize(D, Flag) ->
     case normalize(D) of
 	X when is_atom(X) -> X;
-	X when is_record(X, tztime) ->
-	    X#tztime{flag=Flag};
-	_ ->
-	    erlang:error(badDateTime, D)
-	end.
+	{Date, X} when is_record(X, tztime) ->
+	    {Date, X#tztime{flag=Flag}}
+    end.
 
 
 
