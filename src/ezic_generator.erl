@@ -10,22 +10,29 @@ generate() ->
   {ok, MapFile} = file:open("zones/ezic_zone_map.erl", [write]),
   file:write(MapFile, "-module(ezic_zone_map).\n"),
   file:write(MapFile, "-export([find/1]).\n"),
-  generate_zones(FlatZones, MapFile, []),
-  generate_links(Links, MapFile),
+  SeenZones = generate_zones(FlatZones, MapFile, []),
+  generate_links(Links, MapFile, SeenZones),
 
   file:write(MapFile, "find(Z) -> throw({zone_not_found, Z}).\n"),
   file:close(MapFile),
   ok.
 
-generate_links([], _) -> ok;
-generate_links([#link{from = From, to = To} | Rest], MapFile) ->
-  file:write(MapFile, io_lib:format("find(~p) -> find(~p);\n", [To, From])),
-  generate_links(Rest, MapFile).
+generate_links([], _, _) -> ok;
+generate_links([#link{from = From, to = To} | Rest], MapFile, Seen) ->
+  Seen2 = case ordsets:is_element(To, Seen) of
+    true ->
+      Seen;
+    false ->
+      file:write(MapFile, io_lib:format("find(~p) -> find(~p);\n", [To, From])),
+      ordsets:add_element(To, Seen)
+  end,
+  generate_links(Rest, MapFile, Seen2).
 
 generate_zones([], MapFile, Files) ->
-  lists:foreach(fun({ZoneName, Content}) ->
-    create_file(ZoneName, Content, MapFile)
-  end, Files);
+  lists:foldl(fun({ZoneName, Content}, Acc) ->
+    create_file(ZoneName, Content, MapFile),
+    ordsets:add_element(ZoneName, Acc)
+  end, ordsets:new(), Files);
 
 generate_zones([FlatZone = #flatzone{tzname = Name} | Rest], MapFile, Files) ->
   Files2 = case orddict:is_key(Name, Files) of

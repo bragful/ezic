@@ -26,21 +26,21 @@ local_to_utc_errors_test_() ->
 %% Tests overlap logic around timezones that have odd DST rules
 local_to_utc_funkyDST_test_() ->
     [
-     %% gap
-     ?_assertMatch({{1948,5,1},{16,0,0}}, ezic:local_to_utc({{1948,5,2},{1,00,00}}, "Asia/Tokyo"))
-     , ?_assertMatch({error, no_zone}, ezic:local_to_utc({{1948,5,2},{2,00,00}}, "Asia/Tokyo"))
-     , ?_assertMatch({{1948,5,1},{17,0,0}}, ezic:local_to_utc({{1948,5,2},{3,00,00}}, "Asia/Tokyo"))
+     %% gap (1948-05-02 00:00 -> 01:00 JST/JDT)
+     ?_assertMatch({{1948,5,1},{14,0,0}}, ezic:local_to_utc({{1948,5,1},{23,00,00}}, "Asia/Tokyo"))
+     , ?_assertMatch({error, no_zone}, ezic:local_to_utc({{1948,5,2},{0,00,00}}, "Asia/Tokyo"))
+     , ?_assertMatch({{1948,5,1},{15,0,0}}, ezic:local_to_utc({{1948,5,2},{1,00,00}}, "Asia/Tokyo"))
 
-     %% overlap
-     , ?_assertMatch({{1948,9,10},{14,30,0}}, ezic:local_to_utc({{1948,9,11},{0,30,00}}, "Asia/Tokyo"))
-     , ?_assertMatch({error, {ambiguous_zone, _}}, ezic:local_to_utc({{1948,9,11},{1,00,00}}, "Asia/Tokyo"))
-     , ?_assertMatch({{1948,9,10},{17,0,0}}, ezic:local_to_utc({{1948,9,11},{2,00,00}}, "Asia/Tokyo"))
+     %% overlap (1948-09-12 00:00..00:59:59 JDT/JST)
+     , ?_assertMatch({{1948,9,11},{13,30,0}}, ezic:local_to_utc({{1948,9,11},{23,30,00}}, "Asia/Tokyo"))
+     , ?_assertMatch({error, {ambiguous_zone, _}}, ezic:local_to_utc({{1948,9,12},{0,00,00}}, "Asia/Tokyo"))
+     , ?_assertMatch({{1948,9,11},{16,0,0}}, ezic:local_to_utc({{1948,9,12},{1,00,00}}, "Asia/Tokyo"))
 
-     %% DST end
-     , ?_assertMatch({error, no_zone}, ezic:local_to_utc({{1951,5,6},{2,0,0}}, "Asia/Tokyo")) %% final DST gap
-     , ?_assertMatch({{1951,5,5},{17,0,0}}, ezic:local_to_utc({{1951,5,6},{3,0,0}}, "Asia/Tokyo")) %% DST in effect for the last time
-     , ?_assertMatch({error, {ambiguous_zone, _}}, ezic:local_to_utc({{1951,9,8},{1,0,0}}, "Asia/Tokyo")) %% DST overlap
-     , ?_assertMatch({{1951,9,7},{17,0,0}}, ezic:local_to_utc({{1951,9,8},{2,0,0}}, "Asia/Tokyo")) %% DST off for the last time
+     %% DST end (1951-05-06 00:00 gap & 1951-09-09 00:00 overlap)
+     , ?_assertMatch({error, no_zone}, ezic:local_to_utc({{1951,5,6},{0,0,0}}, "Asia/Tokyo")) %% final DST gap
+     , ?_assertMatch({{1951,5,5},{15,0,0}}, ezic:local_to_utc({{1951,5,6},{1,0,0}}, "Asia/Tokyo")) %% DST in effect for the last time
+     , ?_assertMatch({error, {ambiguous_zone, _}}, ezic:local_to_utc({{1951,9,9},{0,0,0}}, "Asia/Tokyo")) %% DST overlap
+     , ?_assertMatch({{1951,9,8},{16,0,0}}, ezic:local_to_utc({{1951,9,9},{1,0,0}}, "Asia/Tokyo")) %% DST off for the last time
      , ?_assertMatch({{1952,5,3},{17,0,0}}, ezic:local_to_utc({{1952,5,4},{2,0,0}}, "Asia/Tokyo")) %% ensure DST not in effect for 1952
     ].
 
